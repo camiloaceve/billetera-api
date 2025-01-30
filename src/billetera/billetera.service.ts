@@ -21,4 +21,32 @@ export class BilleteraService {
     );
     return billetera;
   }
+
+  async realizarPago(origen: string, destino: string, monto: number) {
+    const billeteraOrigen = await this.billeteraModel.findOne({
+      documento: origen,
+    });
+    const billeteraDestino = await this.billeteraModel.findOne({
+      documento: destino,
+    });
+
+    if (!billeteraOrigen || !billeteraDestino) {
+      throw new Error('Una de las billeteras no existe');
+    }
+
+    if (billeteraOrigen.saldo < monto) {
+      throw new Error('Saldo insuficiente');
+    }
+
+    await this.billeteraModel.updateOne(
+      { documento: origen },
+      { $inc: { saldo: -monto } },
+    );
+    await this.billeteraModel.updateOne(
+      { documento: destino },
+      { $inc: { saldo: monto } },
+    );
+
+    return { mensaje: 'Pago realizado con éxito', monto };
+  }
 }

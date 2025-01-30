@@ -24,8 +24,12 @@ export class BilleteraController {
     example: '123456789',
   })
   async consultarSaldo(@Query('documento') documento: string) {
-    const saldo = await this.billeteraService.consultarSaldo(documento);
-    return { success: true, cod_error: '00', message_error: '', data: saldo };
+    try {
+      const saldo = await this.billeteraService.consultarSaldo(documento);
+      return { success: true, cod_error: '00', message_error: '', data: saldo };
+    } catch (error) {
+      return { success: false, cod_error: '02', message_error: error.message };
+    }
   }
 
   @Post('recarga')
@@ -42,15 +46,51 @@ export class BilleteraController {
     },
   })
   async recargarSaldo(@Body() { documento, valor }: any) {
-    const billetera = await this.billeteraService.recargarSaldo(
-      documento,
-      valor,
-    );
-    return {
-      success: true,
-      cod_error: '00',
-      message_error: 'Recarga exitosa',
-      data: billetera,
-    };
+    try {
+      const billetera = await this.billeteraService.recargarSaldo(
+        documento,
+        valor,
+      );
+      return {
+        success: true,
+        cod_error: '00',
+        message_error: 'Recarga exitosa',
+        data: billetera,
+      };
+    } catch (error) {
+      return { success: false, cod_error: '02', message_error: error.message };
+    }
+  }
+
+  @Post('pago')
+  @ApiOperation({ summary: 'Realizar un pago entre billeteras' })
+  @ApiResponse({ status: 201, description: 'Pago realizado con éxito.' })
+  @ApiResponse({ status: 400, description: 'Error al realizar el pago.' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        origen: { type: 'string', example: '123456789' },
+        destino: { type: 'string', example: '987654321' },
+        monto: { type: 'number', example: 20000 },
+      },
+    },
+  })
+  async realizarPago(@Body() { origen, destino, monto }: any) {
+    try {
+      const resultado = await this.billeteraService.realizarPago(
+        origen,
+        destino,
+        monto,
+      );
+      return {
+        success: true,
+        cod_error: '00',
+        message_error: '',
+        data: resultado,
+      };
+    } catch (error) {
+      return { success: false, cod_error: '02', message_error: error.message };
+    }
   }
 }
