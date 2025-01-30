@@ -1,5 +1,11 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { BilleteraService } from './billetera.service';
 
 @ApiTags('Billetera')
@@ -11,15 +17,13 @@ export class BilleteraController {
   @ApiOperation({ summary: 'Consultar el saldo de la billetera' })
   @ApiResponse({ status: 200, description: 'Saldo consultado exitosamente.' })
   @ApiResponse({ status: 400, description: 'Error en la consulta de saldo.' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        documento: { type: 'string', example: '123456789' },
-      },
-    },
+  @ApiQuery({
+    name: 'documento',
+    required: true,
+    type: 'string',
+    example: '123456789',
   })
-  async consultarSaldo(@Body() { documento }: any) {
+  async consultarSaldo(@Query('documento') documento: string) {
     const saldo = await this.billeteraService.consultarSaldo(documento);
     return { success: true, cod_error: '00', message_error: '', data: saldo };
   }
