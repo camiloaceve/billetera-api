@@ -1,16 +1,51 @@
-import { MailerService } from '@nestjs-modules/mailer';
+import axios from 'axios';
 import { Injectable } from '@nestjs/common';
+import { IEmailBody } from './interface/email.interface';
+import { EnvironmentService } from 'src/common/enviroment.config';
 
 @Injectable()
 export class EmailService {
-  constructor(private readonly mailerService: MailerService) {}
+  constructor(private environmentsService: EnvironmentService) {}
+  async sendMail(dataEmailCloud: IEmailBody) {
+    try {
+      const { data } = await axios.post(
+        this.environmentsService.mailUrl,
+        dataEmailCloud,
+      );
+      return {
+        err: false,
+        data,
+      };
+    } catch (error: any) {
+      console.log('Error in function: [sendEmails]', error);
+      return {
+        err: true,
+        data: error,
+      };
+    }
+  }
 
-  async enviarToken(email: string, token: string) {
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Código de Confirmación de Pago',
-      text: `Tu código de confirmación es:`,
-      html: `<p>Tu código de confirmación es: <strong>${token}</strong></p>`,
-    });
+  async transactionMail(email: string, token: string) {
+    try {
+      const dataEmailUser: IEmailBody = {
+        from: `Tu Billetera Virtual <${this.environmentsService.emailFrom}>`,
+        to: `${email}`,
+        subject: 'Confirmacion de compra',
+        templateName: 'notification-token',
+        data: {
+          Token: `${token}`,
+        },
+      };
+
+      await this.sendMail(dataEmailUser);
+      console.log('End of notifications user');
+      return `Notifications were successfully sending`;
+    } catch (error) {
+      console.error('Ocurrio un error en el axios', error);
+      return {
+        code: 500,
+        message: 'Error al enviar correos',
+      };
+    }
   }
 }
