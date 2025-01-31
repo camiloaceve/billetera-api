@@ -63,6 +63,30 @@ export class BilleteraController {
   }
 
   @Post('iniciar-pago')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'juan.perez@yopmail.com' },
+        documento: { type: 'string', example: '123456789' },
+        monto: { type: 'number', example: 1000 },
+      },
+      required: ['email', 'documento', 'monto'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Token de pago generado exitosamente.',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        cod_error: { type: 'string', example: '00' },
+        message_error: { type: 'string', example: '' },
+        data: { type: 'string', example: 'token_generado' },
+      },
+    },
+  })
   async generarTokenDePago(@Body() { email, documento, monto }: any) {
     try {
       const token = await this.billeteraService.iniciarDePago(
@@ -141,6 +165,35 @@ export class BilleteraController {
   }
 
   @Post('confirmar-pago')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        sessionId: {
+          type: 'string',
+          example: '220c3814-71ff-4ab4-b2a8-9b0fa896f94f',
+        },
+        token: {
+          type: 'string',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        },
+      },
+      required: ['sessionId', 'token'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pago confirmado exitosamente.',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        cod_error: { type: 'string', example: '00' },
+        message_error: { type: 'string', example: '' },
+        data: { type: 'string', example: 'resultado_confirmacion' },
+      },
+    },
+  })
   async confirmarPago(@Body() { sessionId, token }: any) {
     try {
       const resultado = await this.billeteraService.confirmarPago(
