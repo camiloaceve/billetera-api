@@ -27,6 +27,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('Billetera', 'Operaciones relacionadas con billetera virtual')
     .addServer('http://localhost:3001/', 'Local')
+    .addServer('https://billetera-api.onrender.com', 'Productivo')
     .build();
 
   const document = SwaggerModule.createDocument(app, options);
@@ -39,13 +40,10 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT);
   log.log(
-    `🔥 Servidor escuchando en el puerto: http://localhost:${process.env.PORT} 🚀`,
+    `🔥 Servidor escuchando en el puerto: ${process.env.PORT} 🚀`,
     '\x1b[95m',
   );
   log.log(`📗Swagger📗`, '\x1b[34m');
-  log.log(
-    `✔ Documentacion API: http://localhost:${process.env.PORT}/docs`,
-    '\x1b[34m',
-  );
+  log.log(`✔ Documentacion API:${process.env.PORT}/docs`, '\x1b[34m');
 }
 bootstrap();
