@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
 import { EnvironmentService } from 'src/common/enviroment.config';
+import { EmailService } from './email/email.service';
 
 @Module({
   imports: [
@@ -13,8 +14,8 @@ import { EnvironmentService } from 'src/common/enviroment.config';
       signOptions: { expiresIn: process.env.JWT_EXPIRES_IN },
     }),
   ],
-  providers: [AuthService, EnvironmentService],
+  providers: [AuthService, EnvironmentService, EmailService],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, EmailService],
 })
 export class AuthModule {}

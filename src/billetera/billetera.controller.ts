@@ -94,35 +94,15 @@ export class BilleteraController {
     }
   }
 
-  @Post('generar-token')
-  @ApiOperation({
-    summary: 'Generar token de pago',
-    description:
-      'Genera un token de pago basado en el documento y el monto enviado.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Token generado exitosamente.',
-    schema: { example: { success: true, token: 'abc123' } },
-  })
-  @ApiResponse({ status: 400, description: 'Error en la solicitud.' })
-  @ApiBody({
-    description: 'Datos necesarios para generar el token de pago.',
-    schema: {
-      type: 'object',
-      properties: {
-        documento: { type: 'string', example: '123456789' },
-        monto: { type: 'number', example: 50000 },
-      },
-      required: ['documento', 'monto'],
-    },
-  })
-  async generarTokenDePago(@Body() { documento, monto }: any) {
+  @Post('iniciar-pago')
+  async generarTokenDePago(@Body() { documento, monto, email }: any) {
     try {
-      const token = await this.billeteraService.generarTokenDePago(
+      const token = await this.billeteraService.iniciarDePago(
         documento,
         monto,
+        email,
       );
+      console.log(token);
       return {
         success: true,
         cod_error: '00',
@@ -179,6 +159,24 @@ export class BilleteraController {
         origen,
         destino,
         monto,
+        token,
+      );
+      return {
+        success: true,
+        cod_error: '00',
+        message_error: '',
+        data: resultado,
+      };
+    } catch (error) {
+      return { success: false, cod_error: '02', message_error: error.message };
+    }
+  }
+
+  @Post('confirmar-pago')
+  async confirmarPago(@Body() { sessionId, token }: any) {
+    try {
+      const resultado = await this.billeteraService.confirmarPago(
+        sessionId,
         token,
       );
       return {

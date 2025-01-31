@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+
 import { EnvironmentService } from 'src/common/enviroment.config';
 
 @Injectable()
@@ -9,12 +10,16 @@ export class AuthService {
     private readonly environmentsService: EnvironmentService,
   ) {}
 
-  generarToken(documento: string, monto: number) {
-    const payload = { documento, monto };
-    return this.jwtService.sign(payload, {
+  generarToken(sessionId: string, documento: string, monto: number) {
+    const payload = { sessionId, documento, monto };
+    const token = this.jwtService.sign(payload, {
       secret: this.environmentsService.secret,
       expiresIn: this.environmentsService.expireToken,
     });
+    return {
+      token,
+      sessionId,
+    };
   }
 
   verificarToken(token: string) {
