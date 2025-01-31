@@ -15,5 +15,6 @@ import { EnvironmentService } from 'src/common/enviroment.config';
   ],
   providers: [AuthService, EnvironmentService],
   controllers: [AuthController],
+  exports: [AuthService],
 })
 export class AuthModule {}

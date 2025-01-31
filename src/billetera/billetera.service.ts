@@ -2,12 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Billetera } from './schemas/billetera.schema';
 import { Model } from 'mongoose';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class BilleteraService {
   constructor(
     @InjectModel(Billetera.name) private billeteraModel: Model<Billetera>,
+    private authService: AuthService,
   ) {}
+
+  async generarTokenDePago(documento: string, monto: number) {
+    return this.authService.generarToken(documento, monto);
+  }
 
   async consultarSaldo(documento: string) {
     return await this.billeteraModel.findOne({ documento });
