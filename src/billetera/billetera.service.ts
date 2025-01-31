@@ -55,4 +55,18 @@ export class BilleteraService {
 
     return { mensaje: 'Pago realizado con éxito', monto };
   }
+
+  async realizarPagoConToken(
+    origen: string,
+    destino: string,
+    monto: number,
+    token: string,
+  ) {
+    const data = this.authService.verificarToken(token);
+    if (data.documento !== origen || data.monto !== monto) {
+      throw new Error('El token no coincide con la transacción');
+    }
+
+    return this.realizarPago(origen, destino, monto);
+  }
 }

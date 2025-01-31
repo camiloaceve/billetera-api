@@ -133,4 +133,62 @@ export class BilleteraController {
       return { success: false, cod_error: '02', message_error: error.message };
     }
   }
+
+  @ApiOperation({ summary: 'Realizar pago con token' })
+  @ApiBody({
+    description: 'Datos del pago con token',
+    type: Object,
+    examples: {
+      ejemplo1: {
+        value: {
+          origen: '123456789',
+          destino: '987654321',
+          monto: 20000,
+          token: 'TOKEN_GENERADO',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Pago realizado con éxito',
+    schema: {
+      example: {
+        success: true,
+        cod_error: '00',
+        message_error: '',
+        data: {},
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Error en el pago',
+    schema: {
+      example: {
+        success: false,
+        cod_error: '02',
+        message_error: '',
+      },
+    },
+  })
+  @Post('pago-token')
+  async realizarPagoConToken(@Body() { origen, destino, monto, token }: any) {
+    try {
+      const resultado = await this.billeteraService.realizarPagoConToken(
+        origen,
+        destino,
+        monto,
+        token,
+      );
+      return {
+        success: true,
+        cod_error: '00',
+        message_error: '',
+        data: resultado,
+      };
+    } catch (error) {
+      return { success: false, cod_error: '02', message_error: error.message };
+    }
+  }
 }
