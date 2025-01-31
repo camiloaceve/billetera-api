@@ -62,45 +62,13 @@ export class BilleteraController {
     }
   }
 
-  @Post('pago')
-  @ApiOperation({ summary: 'Realizar un pago entre billeteras' })
-  @ApiResponse({ status: 201, description: 'Pago realizado con éxito.' })
-  @ApiResponse({ status: 400, description: 'Error al realizar el pago.' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        origen: { type: 'string', example: '123456789' },
-        destino: { type: 'string', example: '987654321' },
-        monto: { type: 'number', example: 20000 },
-      },
-    },
-  })
-  async realizarPago(@Body() { origen, destino, monto }: any) {
-    try {
-      const resultado = await this.billeteraService.realizarPago(
-        origen,
-        destino,
-        monto,
-      );
-      return {
-        success: true,
-        cod_error: '00',
-        message_error: '',
-        data: resultado,
-      };
-    } catch (error) {
-      return { success: false, cod_error: '02', message_error: error.message };
-    }
-  }
-
   @Post('iniciar-pago')
-  async generarTokenDePago(@Body() { documento, monto, email }: any) {
+  async generarTokenDePago(@Body() { email, documento, monto }: any) {
     try {
       const token = await this.billeteraService.iniciarDePago(
+        email,
         documento,
         monto,
-        email,
       );
       console.log(token);
       return {

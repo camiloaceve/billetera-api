@@ -4,47 +4,59 @@ import { Billetera } from './schemas/billetera.schema';
 import { Model } from 'mongoose';
 import { AuthService } from 'src/auth/auth.service';
 import { v4 as uuidv4 } from 'uuid';
-import { MailerService } from '@nestjs-modules/mailer';
+import { EmailService } from 'src/auth/email/email.service';
 
 @Injectable()
 export class BilleteraService {
   constructor(
     @InjectModel(Billetera.name) private billeteraModel: Model<Billetera>,
     private authService: AuthService,
-    private readonly mailerService: MailerService,
+    private emailService: EmailService,
   ) {}
 
   async iniciarDePago(email: string, documento: string, monto: number) {
-    const sessionId = uuidv4();
-    const dataToken = this.authService.generarToken(
-      sessionId,
-      documento,
-      monto,
-    );
+    try {
+      const sessionId = uuidv4();
+      const dataToken = this.authService.generarToken(
+        sessionId,
+        documento,
+        monto,
+      );
 
-    await this.mailerService.sendMail({
-      to: email,
-      subject: 'Confirmación de pago',
-      text: `Tu código de confirmación es: ${dataToken.token}`,
-    });
+      await this.emailService.transactionMail(
+        email,
+        sessionId,
+        dataToken.token,
+      );
 
-    return {
-      mensaje: 'Se ha enviado un correo con el código de confirmación.',
-      sessionId,
-    };
+      return {
+        mensaje: 'Se ha enviado un correo con el código de confirmación.',
+        sessionId,
+      };
+    } catch (error) {
+      return error.message;
+    }
   }
 
   async consultarSaldo(documento: string) {
-    return await this.billeteraModel.findOne({ documento });
+    try {
+      return await this.billeteraModel.findOne({ documento });
+    } catch (error) {
+      return error.message;
+    }
   }
 
   async recargarSaldo(documento: string, valor: number) {
-    const billetera = await this.billeteraModel.findOneAndUpdate(
-      { documento },
-      { $inc: { saldo: valor } },
-      { new: true, upsert: true },
-    );
-    return billetera;
+    try {
+      const billetera = await this.billeteraModel.findOneAndUpdate(
+        { documento },
+        { $inc: { saldo: valor } },
+        { new: true, upsert: true },
+      );
+      return billetera;
+    } catch (error) {
+      return error.message;
+    }
   }
 
   async realizarPago(origen: string, destino: string, monto: number) {
@@ -81,12 +93,15 @@ export class BilleteraService {
     monto: number,
     token: string,
   ) {
-    const data = this.authService.verificarToken(token);
-    if (data.documento !== origen || data.monto !== monto) {
-      throw new Error('El token no coincide con la transacción');
+    try {
+      const data = this.authService.verificarToken(token);
+      if (data.documento !== origen || data.monto !== monto) {
+        throw new Error('El token no coincide con la transacción');
+      }
+      return this.realizarPago(origen, destino, monto);
+    } catch (error) {
+      return error.message;
     }
-
-    return this.realizarPago(origen, destino, monto);
   }
 
   async confirmarPago(sessionId: string, token: string) {

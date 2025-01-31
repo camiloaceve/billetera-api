@@ -25,14 +25,15 @@ export class EmailService {
     }
   }
 
-  async transactionMail(email: string, token: string) {
+  async transactionMail(email: string, sessionId: string, token: any) {
     try {
       const dataEmailUser: IEmailBody = {
         from: `Tu Billetera Virtual <${this.environmentsService.emailFrom}>`,
         to: `${email}`,
-        subject: 'Confirmacion de compra',
+        subject: 'Confirmación de compra',
         templateName: 'notification-token',
         data: {
+          Session: `${sessionId}`,
           Token: `${token}`,
         },
       };
