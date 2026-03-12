@@ -4,6 +4,7 @@ import { BilleteraService } from './billetera.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Billetera, BilleteraSchema } from './schemas/billetera.schema';
 import { AuthModule } from 'src/auth/auth.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { AuthModule } from 'src/auth/auth.module';
       { name: Billetera.name, schema: BilleteraSchema },
     ]),
     AuthModule,
+    AuditModule,
   ],
   controllers: [BilleteraController],
   providers: [BilleteraService],

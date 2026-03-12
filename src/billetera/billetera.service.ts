@@ -5,6 +5,8 @@ import { Model } from 'mongoose';
 import { AuthService } from 'src/auth/auth.service';
 import { v4 as uuidv4 } from 'uuid';
 import { EmailService } from 'src/auth/email/email.service';
+import { AuditService, AuditAction } from '../audit/audit.service';
+import { Request } from 'express';
 
 @Injectable()
 export class BilleteraService {
@@ -12,11 +14,26 @@ export class BilleteraService {
     @InjectModel(Billetera.name) private billeteraModel: Model<Billetera>,
     private authService: AuthService,
     private emailService: EmailService,
+    private auditService: AuditService,
   ) {}
 
-  async iniciarDePago(email: string, documento: string, monto: number) {
+  async iniciarDePago(
+    email: string,
+    documento: string,
+    monto: number,
+    request?: Request,
+  ) {
     try {
       const sessionId = uuidv4();
+
+      // Log de inicio de pago
+      await this.auditService.logPending(
+        AuditAction.INICIO_PAGO,
+        documento,
+        { sessionId, monto, email },
+        request,
+      );
+
       const dataToken = this.authService.generarToken(
         sessionId,
         documento,
@@ -29,62 +46,135 @@ export class BilleteraService {
         dataToken.token,
       );
 
+      // Log de éxito
+      await this.auditService.logSuccess(
+        AuditAction.INICIO_PAGO,
+        documento,
+        { sessionId, monto, email },
+        request,
+      );
+
       return {
         mensaje: 'Se ha enviado un correo con el código de confirmación.',
         sessionId,
       };
     } catch (error) {
-      return error.message;
-    }
-  }
-
-  async consultarSaldo(documento: string) {
-    try {
-      return await this.billeteraModel.findOne({ documento });
-    } catch (error) {
-      return error.message;
-    }
-  }
-
-  async recargarSaldo(documento: string, valor: number) {
-    try {
-      const billetera = await this.billeteraModel.findOneAndUpdate(
-        { documento },
-        { $inc: { saldo: valor } },
-        { new: true, upsert: true },
+      // Log de error
+      await this.auditService.logError(
+        AuditAction.INICIO_PAGO,
+        documento,
+        error.message,
+        { monto, email },
+        request,
       );
-      return billetera;
-    } catch (error) {
       return error.message;
+    }
+  }
+
+  async consultarSaldo(documento: string, request?: Request) {
+    try {
+      const saldo = await this.billeteraModel.findOne({ documento });
+
+      // Log de consulta de saldo
+      await this.auditService.logSuccess(
+        AuditAction.CONSULTA_SALDO,
+        documento,
+        { saldo: saldo?.saldo || 0 },
+        request,
+      );
+
+      return saldo;
+    } catch (error) {
+      // Log de error
+      await this.auditService.logError(
+        AuditAction.CONSULTA_SALDO,
+        documento,
+        error.message,
+        {},
+        request,
+      );
+      return error.message;
+    }
+  }
+
+  async recargarSaldo(documento: string, valor: number, request?: Request) {
+    const session = await this.billeteraModel.startSession();
+
+    try {
+      const result = await session.withTransaction(async () => {
+        const billetera = await this.billeteraModel.findOneAndUpdate(
+          { documento },
+          { $inc: { saldo: valor } },
+          { new: true, upsert: true, session },
+        );
+
+        return billetera;
+      });
+
+      // Log de recarga exitosa
+      await this.auditService.logSuccess(
+        AuditAction.RECARGA,
+        documento,
+        { valor, nuevoSaldo: result.saldo },
+        request,
+      );
+
+      return result;
+    } catch (error) {
+      // Log de error
+      await this.auditService.logError(
+        AuditAction.RECARGA,
+        documento,
+        error.message,
+        { valor },
+        request,
+      );
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
     }
   }
 
   async realizarPago(origen: string, destino: string, monto: number) {
-    const billeteraOrigen = await this.billeteraModel.findOne({
-      documento: origen,
-    });
-    const billeteraDestino = await this.billeteraModel.findOne({
-      documento: destino,
-    });
+    const session = await this.billeteraModel.startSession();
 
-    if (!billeteraOrigen || !billeteraDestino) {
-      throw new Error('Una de las billeteras no existe');
+    try {
+      await session.withTransaction(async () => {
+        // Verificar billeteras dentro de la transacción
+        const [billeteraOrigen, billeteraDestino] = await Promise.all([
+          this.billeteraModel.findOne({ documento: origen }).session(session),
+          this.billeteraModel.findOne({ documento: destino }).session(session),
+        ]);
+
+        if (!billeteraOrigen || !billeteraDestino) {
+          throw new Error('Una de las billeteras no existe');
+        }
+
+        if (billeteraOrigen.saldo < monto) {
+          throw new Error('Saldo insuficiente');
+        }
+
+        // Actualizar saldos atómicamente
+        await Promise.all([
+          this.billeteraModel
+            .updateOne({ documento: origen }, { $inc: { saldo: -monto } })
+            .session(session),
+          this.billeteraModel
+            .updateOne({ documento: destino }, { $inc: { saldo: monto } })
+            .session(session),
+        ]);
+
+        return { mensaje: 'Pago realizado con éxito', monto };
+      });
+
+      return { mensaje: 'Pago realizado con éxito', monto };
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
     }
-
-    if (billeteraOrigen.saldo < monto) {
-      throw new Error('Saldo insuficiente');
-    }
-
-    await this.billeteraModel.updateOne(
-      { documento: origen },
-      { $inc: { saldo: -monto } },
-    );
-    await this.billeteraModel.updateOne(
-      { documento: destino },
-      { $inc: { saldo: monto } },
-    );
-
-    return { mensaje: 'Pago realizado con éxito', monto };
   }
 
   async realizarPagoConToken(

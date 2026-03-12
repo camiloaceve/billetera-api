@@ -25,6 +25,31 @@ export class EmailService {
     }
   }
 
+  async sendVerificationEmail(email: string, verificationCode: string) {
+    try {
+      const dataEmailUser: IEmailBody = {
+        from: `Tu Billetera Virtual <${this.environmentsService.emailFrom}>`,
+        to: `${email}`,
+        subject: 'Verificación de cuenta - Tu Billetera Virtual',
+        templateName: 'notification-token',
+        data: {
+          Session: ` ${verificationCode}`,
+          Token: `${email}`,
+        },
+      };
+
+      await this.sendMail(dataEmailUser);
+      console.log('Verification email sent successfully');
+      return `Verification email sent successfully`;
+    } catch (error) {
+      console.error('Error sending verification email', error);
+      return {
+        code: 500,
+        message: 'Error al enviar correo de verificación',
+      };
+    }
+  }
+
   async transactionMail(email: string, sessionId: string, token: any) {
     try {
       const dataEmailUser: IEmailBody = {
