@@ -7,6 +7,9 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { BilleteraService } from './billetera.service';
+import { ConsultaSaldoDto } from './dto/saldo.dto';
+import { RecargaDto } from './dto/recarga.dto';
+import { IniciarPagoDto, PagoTokenDto, ConfirmarPagoDto } from './dto/pago.dto';
 
 @ApiTags('Billetera')
 @Controller('billetera')
@@ -23,9 +26,9 @@ export class BilleteraController {
     type: 'string',
     example: '123456789',
   })
-  async consultarSaldo(@Query('documento') documento: string) {
+  async consultarSaldo(@Query() query: ConsultaSaldoDto) {
     try {
-      const saldo = await this.billeteraService.consultarSaldo(documento);
+      const saldo = await this.billeteraService.consultarSaldo(query.documento);
       return { success: true, cod_error: '00', message_error: '', data: saldo };
     } catch (error) {
       return { success: false, cod_error: '02', message_error: error.message };
@@ -45,11 +48,11 @@ export class BilleteraController {
       },
     },
   })
-  async recargarSaldo(@Body() { documento, valor }: any) {
+  async recargarSaldo(@Body() recargaDto: RecargaDto) {
     try {
       const billetera = await this.billeteraService.recargarSaldo(
-        documento,
-        valor,
+        recargaDto.documento,
+        recargaDto.valor,
       );
       return {
         success: true,
@@ -87,12 +90,12 @@ export class BilleteraController {
       },
     },
   })
-  async generarTokenDePago(@Body() { email, documento, monto }: any) {
+  async generarTokenDePago(@Body() pagoDto: IniciarPagoDto) {
     try {
       const token = await this.billeteraService.iniciarDePago(
-        email,
-        documento,
-        monto,
+        pagoDto.email,
+        pagoDto.documento,
+        pagoDto.monto,
       );
       console.log(token);
       return {
@@ -145,13 +148,13 @@ export class BilleteraController {
     },
   })
   @Post('pago-token')
-  async realizarPagoConToken(@Body() { origen, destino, monto, token }: any) {
+  async realizarPagoConToken(@Body() pagoDto: PagoTokenDto) {
     try {
       const resultado = await this.billeteraService.realizarPagoConToken(
-        origen,
-        destino,
-        monto,
-        token,
+        pagoDto.origen,
+        pagoDto.destino,
+        pagoDto.monto,
+        pagoDto.token,
       );
       return {
         success: true,
@@ -194,11 +197,11 @@ export class BilleteraController {
       },
     },
   })
-  async confirmarPago(@Body() { sessionId, token }: any) {
+  async confirmarPago(@Body() confirmDto: ConfirmarPagoDto) {
     try {
       const resultado = await this.billeteraService.confirmarPago(
-        sessionId,
-        token,
+        confirmDto.sessionId,
+        confirmDto.token,
       );
       return {
         success: true,
