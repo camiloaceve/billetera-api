@@ -24,27 +24,4 @@ export class HealthController {
       },
     };
   }
-
-  @Get('readiness')
-  @ApiOperation({ summary: 'Check if API is ready to accept traffic' })
-  async readiness() {
-    const isMongoReady = this.mongoConnection.readyState === 1;
-
-    return {
-      status: isMongoReady ? 'ready' : 'not ready',
-      timestamp: new Date().toISOString(),
-      checks: {
-        database: isMongoReady ? 'connected' : 'disconnected',
-      },
-    };
-  }
-
-  @Get('liveness')
-  @ApiOperation({ summary: 'Check if API is alive' })
-  async liveness() {
-    return {
-      status: 'alive',
-      timestamp: new Date().toISOString(),
-    };
-  }
 }
