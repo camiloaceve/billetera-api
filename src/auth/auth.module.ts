@@ -10,6 +10,7 @@ import { EmailService } from './email/email.service';
 import { User, UserSchema } from './schemas/user.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { EmailVerificationService } from './email-verification.service';
+import { PasswordResetService } from './password-reset.service';
 
 @Module({
   imports: [
@@ -27,8 +28,9 @@ import { EmailVerificationService } from './email-verification.service';
     EmailService,
     JwtStrategy,
     EmailVerificationService,
+    PasswordResetService,
   ],
   controllers: [AuthController],
-  exports: [AuthService, EmailService, JwtStrategy],
+  exports: [AuthService, EmailService, JwtStrategy, PasswordResetService],
 })
 export class AuthModule {}

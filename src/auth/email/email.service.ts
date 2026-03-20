@@ -69,8 +69,33 @@ export class EmailService {
     } catch (error) {
       console.error('Ocurrio un error en el axios', error);
       return {
-        code: 500,
-        message: 'Error al enviar correos',
+        message: 'Error sending notification',
+        error: error.message,
+      };
+    }
+  }
+
+  async sendPasswordResetEmail(email: string, resetToken: string) {
+    try {
+      const dataEmailUser: IEmailBody = {
+        from: `Tu Billetera Virtual <${this.environmentsService.emailFrom}>`,
+        to: `${email}`,
+        subject: 'Restablecimiento de Contraseña',
+        templateName: 'password-reset',
+        data: {
+          resetToken,
+          email,
+        },
+      };
+
+      await this.sendMail(dataEmailUser);
+      console.log('Password reset email sent successfully');
+      return 'Password reset email sent successfully';
+    } catch (error) {
+      console.error('Error sending password reset email', error);
+      return {
+        message: 'Error sending password reset email',
+        error: error.message,
       };
     }
   }

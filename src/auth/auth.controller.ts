@@ -22,8 +22,14 @@ import {
   VerifyEmailDto,
   ResendVerificationDto,
 } from './dto/email-verification.dto';
+import {
+  RequestPasswordResetDto,
+  ResetPasswordDto,
+  ChangePasswordDto,
+} from './dto/password-reset.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { EmailVerificationService } from './email-verification.service';
+import { PasswordResetService } from './password-reset.service';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -31,6 +37,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly emailVerificationService: EmailVerificationService,
+    private readonly passwordResetService: PasswordResetService,
   ) {}
 
   @Post('register')
@@ -198,6 +205,94 @@ export class AuthController {
         cod_error: '00',
         message_error: '',
         data: user,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        cod_error: '02',
+        message_error: error.message,
+      };
+    }
+  }
+
+  @Post('request-password-reset')
+  @ApiOperation({ summary: 'Solicitar restablecimiento de contraseña' })
+  @ApiResponse({
+    status: 200,
+    description: 'Email de restablecimiento enviado.',
+  })
+  @ApiResponse({ status: 400, description: 'Error en la solicitud.' })
+  @ApiBody({ type: RequestPasswordResetDto })
+  async requestPasswordReset(@Body() requestDto: RequestPasswordResetDto) {
+    try {
+      await this.passwordResetService.requestPasswordReset(requestDto);
+      return {
+        success: true,
+        cod_error: '00',
+        message_error: '',
+        data: {
+          message:
+            'Si el email está registrado, recibirás un correo con instrucciones.',
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        cod_error: '02',
+        message_error: error.message,
+      };
+    }
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Restablecer contraseña con token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Contraseña restablecida exitosamente.',
+  })
+  @ApiResponse({ status: 400, description: 'Token inválido o expirado.' })
+  @ApiBody({ type: ResetPasswordDto })
+  async resetPassword(@Body() resetDto: ResetPasswordDto) {
+    try {
+      await this.passwordResetService.resetPassword(resetDto);
+      return {
+        success: true,
+        cod_error: '00',
+        message_error: '',
+        data: {
+          message: 'Contraseña restablecida exitosamente.',
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        cod_error: '02',
+        message_error: error.message,
+      };
+    }
+  }
+
+  @Post('change-password')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Cambiar contraseña del usuario autenticado' })
+  @ApiResponse({
+    status: 200,
+    description: 'Contraseña cambiada exitosamente.',
+  })
+  @ApiResponse({ status: 401, description: 'No autorizado.' })
+  @ApiResponse({ status: 400, description: 'Contraseña actual incorrecta.' })
+  @ApiBody({ type: ChangePasswordDto })
+  async changePassword(@Request() req, @Body() changeDto: ChangePasswordDto) {
+    try {
+      await this.passwordResetService.changePassword(req.user.id, changeDto);
+      return {
+        success: true,
+        cod_error: '00',
+        message_error: '',
+        data: {
+          message: 'Contraseña cambiada exitosamente.',
+        },
       };
     } catch (error) {
       return {
